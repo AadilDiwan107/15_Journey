@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker Pro - Day 5</title>
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Inter',sans-serif;
+}
+
+body{
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+min-height:100vh;
+padding:40px 20px;
+}
+
+h1{
+font-weight:800;
+}
+
+.glass{
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(10px);
+border-radius:20px;
+padding:25px;
+box-shadow:0 15px 40px rgba(0,0,0,.4);
+}
+
+input{
+background:#1e293b !important;
+color:white !important;
+border:none !important;
+}
+
+input::placeholder{
+color:#94a3b8 !important;
+}
+
+.habit-card{
+background:#111827;
+border-radius:15px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+
+.calendar{
+display:flex;
+gap:8px;
+margin-top:15px;
+}
+
+.day{
+width:30px;
+height:30px;
+background:#374151;
+border-radius:8px;
+cursor:pointer;
+transition:.3s;
+}
+
+.day.active{
+background:#22d3ee;
+transform:scale(1.1);
+}
+
+.progress-circle{
+width:80px;
+height:80px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:600;
+font-size:14px;
+}
+
+.overall-box{
+background:#0ea5e9;
+padding:15px;
+border-radius:15px;
+margin-bottom:25px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1 class="text-center mb-2">Habit Tracker Pro</h1>
+<p class="text-center text-secondary mb-4">Build Discipline. Track Progress. Win Daily. 🔥</p>
+
+<div class="glass mb-4">
+
+<div class="row g-2">
+<div class="col-md-9">
+<input type="text" id="habitInput" class="form-control" placeholder="Add new habit...">
+</div>
+<div class="col-md-3 d-grid">
+<button class="btn btn-info fw-bold" onclick="addHabit()">Add Habit</button>
+</div>
+</div>
+
+</div>
+
+<div id="overallStats"></div>
+
+<div id="habitList"></div>
+
+</div>
+
+<script>
+
+let habits = JSON.parse(localStorage.getItem("habits")) || [];
+
+function save(){
+localStorage.setItem("habits", JSON.stringify(habits));
+}
+
+function addHabit(){
+const input = document.getElementById("habitInput");
+
+if(input.value.trim() !== ""){
+habits.push({
+id: Date.now(),
+name: input.value,
+days: [false,false,false,false,false,false,false]
+});
+input.value="";
+save();
+render();
+}
+}
+
+function toggleDay(habitId,index){
+const habit = habits.find(h=>h.id===habitId);
+habit.days[index] = !habit.days[index];
+save();
+render();
+}
+
+function calculateOverall(){
+let totalDays = habits.length * 7;
+let completedDays = 0;
+
+habits.forEach(h=>{
+completedDays += h.days.filter(d=>d).length;
+});
+
+let percent = totalDays === 0 ? 0 : Math.round((completedDays/totalDays)*100);
+
+return percent;
+}
+
+function render(){
+
+const list = document.getElementById("habitList");
+const overallDiv = document.getElementById("overallStats");
+
+list.innerHTML="";
+
+let overallPercent = calculateOverall();
+
+overallDiv.innerHTML = `
+<div class="overall-box text-center">
+<h5>Weekly Overall Progress</h5>
+<div class="progress mt-3" style="height:20px;">
+<div class="progress-bar bg-dark fw-bold" role="progressbar"
+style="width:${overallPercent}%">
+${overallPercent}%
+</div>
+</div>
+</div>
+`;
+
+habits.forEach(habit=>{
+
+let completed = habit.days.filter(d=>d).length;
+let percent = Math.round((completed/7)*100);
+
+let daysHTML = habit.days.map((d,i)=>
+`<div class="day ${d?'active':''}" onclick="toggleDay(${habit.id},${i})"></div>`
+).join("");
+
+list.innerHTML += `
+<div class="habit-card">
+
+<div class="d-flex justify-content-between align-items-center">
+<h5>${habit.name}</h5>
+
+<div class="progress-circle"
+style="background:conic-gradient(#22d3ee ${percent}%, #374151 ${percent}%);">
+${percent}%
+</div>
+</div>
+
+<div class="calendar">
+${daysHTML}
+</div>
+
+<p class="text-secondary mt-2 mb-0">
+🔥 ${completed}/7 days completed
+</p>
+
+</div>
+`;
+
+});
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>
+    
