@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productivity Heatmap Pro+</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+
+body{
+    background:#0f172a;
+    color:#f1f5f9;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    max-width:900px;
+    width:100%;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:#00f5a0;
+}
+
+.stats{
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+
+.progress-bar-container{
+    background:#334155;
+    height:14px;
+    border-radius:10px;
+    margin-top:10px;
+    overflow:hidden;
+}
+
+.progress-bar{
+    height:100%;
+    background:linear-gradient(90deg,#00f5a0,#10b981);
+    width:0%;
+    transition:.4s ease;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:12px;
+    background:#1e293b;
+    padding:20px;
+    border-radius:15px;
+    border:1px solid #334155;
+}
+
+.day{
+    width:100%;
+    padding-top:100%;
+    border-radius:10px;
+    border:1px solid #334155;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.day:hover{
+    transform:scale(1.08);
+    box-shadow:0 0 10px #00f5a0;
+}
+
+.level-0{background:#1e293b;}
+.level-1{background:#134e4a;}
+.level-2{background:#0f766e;}
+.level-3{background:#0d9488;}
+.level-4{background:#00f5a0;}
+
+.chart-container{
+    margin-top:30px;
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
+    height:300px;
+}
+
+button{
+    margin-top:20px;
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:#ef4444;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+button:hover{
+    background:#dc2626;
+}
+
+/* MODAL STYLING */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.65);
+    backdrop-filter:blur(6px);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    opacity:0;
+    pointer-events:none;
+    transition:.3s ease;
+}
+
+.modal.active{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.modal-box{
+    background:#1e293b;
+    padding:30px;
+    border-radius:16px;
+    width:90%;
+    max-width:400px;
+    text-align:center;
+    transform:scale(.8);
+    transition:.3s ease;
+    border:1px solid #334155;
+    box-shadow:0 0 25px rgba(0,245,160,0.15);
+}
+
+.modal.active .modal-box{
+    transform:scale(1);
+}
+
+.modal-box h2{
+    margin-bottom:10px;
+    color:#f87171;
+}
+
+.modal-box p{
+    margin-bottom:20px;
+    color:#cbd5e1;
+    font-size:14px;
+}
+
+.modal-buttons{
+    display:flex;
+    gap:10px;
+}
+
+.modal-buttons button{
+    flex:1;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.cancel-btn{
+    background:#334155;
+    color:#f1f5f9;
+}
+
+.confirm-btn{
+    background:#ef4444;
+    color:white;
+}
+
+.confirm-btn:hover{
+    background:#dc2626;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Productivity Heatmap Pro+</h1>
+
+<div class="stats">
+    <div>Total Active Days: <strong id="activeDays">0</strong></div>
+    <div>Best Streak: <strong id="bestStreak">0</strong></div>
+    <div>Progress: <strong id="progressPercent">0%</strong></div>
+
+    <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="chart-container">
+    <canvas id="dualAxisChart"></canvas>
+</div>
+
+<button onclick="openModal()">Clear My Progress</button>
+
+</div>
+
+<!-- PROFESSIONAL MODAL -->
+<div class="modal" id="confirmModal">
+  <div class="modal-box">
+    <h2>Clear Progress?</h2>
+    <p>This action will permanently delete all your productivity data.</p>
+    <div class="modal-buttons">
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="confirm-btn" onclick="confirmClear()">Yes, Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const DAYS = 30;
+let data = JSON.parse(localStorage.getItem("heatmapDataProPlus")) || Array(DAYS).fill(0);
+let chart;
+
+const grid = document.getElementById("grid");
+
+function render(){
+    grid.innerHTML = "";
+    data.forEach((level,index)=>{
+        const div = document.createElement("div");
+        div.className = `day level-${level}`;
+        div.onclick = ()=>toggle(index);
+        grid.appendChild(div);
+    });
+    updateStats();
+    updateChart();
+}
+
+function toggle(index){
+    data[index] = (data[index] + 1) % 5;
+    localStorage.setItem("heatmapDataProPlus",JSON.stringify(data));
+    render();
+}
+
+function updateStats(){
+    const activeDays = data.filter(d=>d>0).length;
+    document.getElementById("activeDays").innerText = activeDays;
+
+    let best = 0, current = 0;
+    data.forEach(d=>{
+        if(d>0){
+            current++;
+            if(current>best) best=current;
+        } else current=0;
+    });
+
+    document.getElementById("bestStreak").innerText = best;
+
+    const percent = Math.round((activeDays / DAYS) * 100);
+    document.getElementById("progressPercent").innerText = percent + "%";
+    document.getElementById("progressBar").style.width = percent + "%";
+}
+
+function getChartData(){
+    let cumulative = [];
+    let sum = 0;
+    data.forEach(val=>{
+        sum += val;
+        cumulative.push(sum);
+    });
+    return { dailyLevels:data, cumulativeScore:cumulative };
+}
+
+function updateChart(){
+    const chartData = getChartData();
+    const ctx = document.getElementById("dualAxisChart").getContext("2d");
+
+    if(chart) chart.destroy();
+
+    chart = new Chart(ctx,{
+        type:'line',
+        data:{
+            labels:Array.from({length:DAYS},(_,i)=>`Day ${i+1}`),
+            datasets:[
+                {
+                    label:'Daily Level (0-4)',
+                    data:chartData.dailyLevels,
+                    borderColor:'#10b981',
+                    backgroundColor:'rgba(16,185,129,0.15)',
+                    borderWidth:3,
+                    fill:true,
+                    tension:0.4,
+                    yAxisID:'y'
+                },
+                {
+                    label:'Cumulative Score',
+                    data:chartData.cumulativeScore,
+                    borderColor:'#3b82f6',
+                    borderWidth:3,
+                    fill:false,
+                    tension:0.4,
+                    yAxisID:'y1'
+                }
+            ]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            scales:{
+                y:{min:0,max:4,position:'left'},
+                y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}
+            }
+        }
+    });
+}
+
+/* MODAL FUNCTIONS */
+
+function openModal(){
+    document.getElementById("confirmModal").classList.add("active");
+}
+
+function closeModal(){
+    document.getElementById("confirmModal").classList.remove("active");
+}
+
+function confirmClear(){
+    data = Array(DAYS).fill(0);
+    localStorage.removeItem("heatmapDataProPlus");
+    closeModal();
+    render();
+}
+
+render();
+
+</script>
+
+</body>
+</html>
