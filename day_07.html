@@ -1,116 +1,327 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Weather App</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<style>
-body{
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-color:white;
-min-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-font-family:Arial, sans-serif;
-}
-
-.weather-card{
-background:rgba(255,255,255,0.1);
-backdrop-filter:blur(10px);
-border-radius:20px;
-padding:30px;
-width:100%;
-max-width:400px;
-text-align:center;
-box-shadow:0 10px 30px rgba(0,0,0,0.3);
-}
-
-.temp{
-font-size:48px;
-font-weight:bold;
-}
-
-.loading{
-font-size:18px;
-}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Study Planner</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(to right, #74b9ff, #0984e3);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #333;
+            --quote-color: #28a745;
+            --progress-bg: #28a745;
+            --btn-motivate: linear-gradient(to right, #00b894, #00cec9);
+        }
+        
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .dark-mode {
+            --bg-gradient: linear-gradient(to right, #1a1a2e, #16213e); /* Cool dark blue-purple */
+            --card-bg: rgba(15, 52, 96, 0.95); /* Darker card */
+            --text-color: #ffffff;
+            --quote-color: #a8e6cf; /* Light green for quotes */
+            --progress-bg: #a8e6cf;
+            --btn-motivate: linear-gradient(to right, #5f27cd, #341f97); /* Purple gradient for buttons */
+        }
+        
+        .planner-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            color: var(--text-color);
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .quote {
+            font-style: italic;
+            font-size: 1.2rem;
+            color: var(--quote-color);
+        }
+        
+        .progress-bar {
+            background-color: var(--progress-bg);
+        }
+        
+        .btn-motivate {
+            background: var(--btn-motivate);
+            border: none;
+            transition: background 0.3s;
+        }
+        
+        .btn-motivate:hover {
+            filter: brightness(1.1);
+        }
+        
+        .task-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+    </style>
 </head>
 <body>
+    <button class="btn btn-outline-light toggle-btn" id="darkModeToggle">Toggle Dark Mode</button>
+    
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="planner-card p-4">
+                    <h1 class="text-center mb-4" style="color: var(--text-color);">Student Study Planner</h1>
+                    <p class="text-center quote" id="motivationalQuote"></p>
+                    
+                    <!-- Add Subject Form -->
+                    <div class="card mb-4 p-3">
+                        <h5>Add Subject & Exam Details</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" id="subjectInput" class="form-control" placeholder="Subject (e.g., Maths)">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" id="examDateInput" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <select id="priorityInput" class="form-select">
+                                    <option value="Low">Low Priority</option>
+                                    <option value="Medium">Medium Priority</option>
+                                    <option value="High">High Priority</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-motivate w-100" onclick="addSubject()">Add Subject</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Study Plan Display -->
+                    <div id="planDisplay" class="mb-4">
+                        <!-- Plan will appear here -->
+                    </div>
+                    
+                    <!-- Daily Study Log -->
+                    <div class="card mb-4 p-3">
+                        <h5>Daily Study Log</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <select id="logSubject" class="form-select">
+                                    <option value="">Select Subject</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" id="logHours" class="form-control" placeholder="Hours Studied Today" min="0" step="0.5">
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-motivate w-100" onclick="logStudy()">Log Study</button>
+                            </div>
+                        </div>
+                        <p id="totalLogged" class="mt-2">Total Logged Hours: 0</p>
+                    </div>
+                    
+                    <!-- Study Tips -->
+                    <div class="alert alert-info" id="studyTip">
+                        <strong>Tip:</strong> Add subjects to get personalized tips!
+                    </div>
+                    
+                    <!-- Clear Button -->
+                    <div class="text-center">
+                        <button class="btn btn-danger" onclick="clearAll()">Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="weather-card">
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let subjects = JSON.parse(localStorage.getItem('studySubjects')) || [];
+        let studyLogs = JSON.parse(localStorage.getItem('studyLogs')) || {};
 
-<h3 class="mb-3">🌍 Your Live Weather</h3>
+        const quotes = [
+            "Padhai karo, zindagi jeeto! Har din ek step ahead.",
+            "Consistency is key—ek din ka mehnat, pura saal ka sukoon!",
+            "Believe in yourself, study smart, and conquer your exams!"
+        ];
 
-<div id="loading" class="loading">Fetching your location...</div>
+        function updateQuote() {
+            document.getElementById('motivationalQuote').textContent = quotes[Math.floor(Math.random() * quotes.length)];
+        }
 
-<div id="weatherData" style="display:none;">
-<h4 id="city"></h4>
-<img id="icon" src="" alt="Weather Icon">
-<div class="temp" id="temperature"></div>
-<p id="description"></p>
+        function addSubject() {
+            const subject = document.getElementById('subjectInput').value;
+            const examDate = document.getElementById('examDateInput').value;
+            const priority = document.getElementById('priorityInput').value;
+            if (subject && examDate) {
+                subjects.push({ subject, examDate, priority, tasks: [] });
+                localStorage.setItem('studySubjects', JSON.stringify(subjects));
+                document.getElementById('subjectInput').value = '';
+                document.getElementById('examDateInput').value = '';
+                updateLogSubjectOptions();
+                displayPlan();
+                updateTip();
+            } else {
+                alert('Please fill all fields!');
+            }
+        }
 
-<hr>
+        function addTask(index, task) {
+            if (task) {
+                subjects[index].tasks.push({ text: task, done: false });
+                localStorage.setItem('studySubjects', JSON.stringify(subjects));
+                displayPlan();
+            }
+        }
 
-<p>💧 Humidity: <span id="humidity"></span>%</p>
-<p>🌬 Wind Speed: <span id="wind"></span> m/s</p>
-</div>
+        function toggleTask(subIndex, taskIndex) {
+            subjects[subIndex].tasks[taskIndex].done = !subjects[subIndex].tasks[taskIndex].done;
+            localStorage.setItem('studySubjects', JSON.stringify(subjects));
+            displayPlan();
+        }
 
-<div id="error" class="text-danger mt-3"></div>
+        function displayPlan() {
+            if (subjects.length === 0) {
+                document.getElementById('planDisplay').innerHTML = '<p class="text-center">No subjects added yet. Add one to see your study plan!</p>';
+                return;
+            }
 
-</div>
+            let totalDays = 0;
+            subjects.forEach(sub => {
+                const daysLeft = Math.ceil((new Date(sub.examDate) - new Date()) / (1000 * 60 * 60 * 24));
+                totalDays = Math.max(totalDays, daysLeft);
+            });
 
-<script>
+            let planHtml = '<h5>Your Study Plan</h5><div class="row">';
+            subjects.forEach((sub, index) => {
+                const daysLeft = Math.ceil((new Date(sub.examDate) - new Date()) / (1000 * 60 * 60 * 24));
+                const priorityMultiplier = sub.priority === 'High' ? 2 : sub.priority === 'Medium' ? 1.5 : 1;
+                const dailyHours = Math.max(1, Math.round((priorityMultiplier * 8) / subjects.length));
+                const totalPlannedHours = dailyHours * totalDays; // Total hours needed for the subject
+                const loggedHours = studyLogs[sub.subject] || 0;
+                const progress = Math.min(100, (loggedHours / totalPlannedHours) * 100); // Progress based on logged vs planned hours
 
-const apiKey = "YOUR_API_KEY_HERE";
+                planHtml += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">${sub.subject} (${sub.priority})</h6>
+                                <p>Exam: ${sub.examDate} (${daysLeft} days left)</p>
+                                <p>Daily Study: ${dailyHours} hours | Logged: ${loggedHours} hours</p>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" style="width: ${progress}%"></div>
+                                </div>
+                                <small>Progress: ${Math.round(progress)}% (Logged / Planned)</small>
+                                
+                                <!-- Sub-Tasks -->
+                                <div class="mt-3">
+                                    <input type="text" class="form-control mb-2" placeholder="Add sub-task (e.g., Chapter 1)" id="taskInput${index}">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="addTask(${index}, document.getElementById('taskInput${index}').value); document.getElementById('taskInput${index}').value=''">Add Task</button>
+                                    <ul class="list-group mt-2 task-list">
+                                        ${sub.tasks.map((task, tIndex) => `
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span style="text-decoration: ${task.done ? 'line-through' : 'none'}">${task.text}</span>
+                                                <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${index}, ${tIndex})">
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            planHtml += '</div>';
+            document.getElementById('planDisplay').innerHTML = planHtml;
+        }
 
-function getWeather(lat, lon){
-fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`)
-.then(response => response.json())
-.then(data => {
+        function updateLogSubjectOptions() {
+            const select = document.getElementById('logSubject');
+            select.innerHTML = '<option value="">Select Subject</option>';
+            subjects.forEach(sub => {
+                select.innerHTML += `<option value="${sub.subject}">${sub.subject}</option>`;
+            });
+        }
 
-document.getElementById("loading").style.display="none";
-document.getElementById("weatherData").style.display="block";
+        function logStudy() {
+            const subject = document.getElementById('logSubject').value;
+            const hours = parseFloat(document.getElementById('logHours').value);
+            if (subject && hours > 0) {
+                studyLogs[subject] = (studyLogs[subject] || 0) + hours;
+                localStorage.setItem('studyLogs', JSON.stringify(studyLogs));
+                document.getElementById('logHours').value = '';
+                updateTotalLogged();
+                displayPlan(); // Update progress bar immediately
+            } else {
+                alert('Select subject and enter valid hours!');
+            }
+        }
 
-document.getElementById("city").innerText = data.name;
-document.getElementById("temperature").innerText = Math.round(data.main.temp) + "°C";
-document.getElementById("description").innerText = data.weather[0].description;
-document.getElementById("humidity").innerText = data.main.humidity;
-document.getElementById("wind").innerText = data.wind.speed;
+        function updateTotalLogged() {
+            const total = Object.values(studyLogs).reduce((sum, h) => sum + h, 0);
+            document.getElementById('totalLogged').textContent = `Total Logged Hours: ${total}`;
+        }
 
-const iconCode = data.weather[0].icon;
-document.getElementById("icon").src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+        function updateTip() {
+            if (subjects.length === 0) return;
+            const highPriority = subjects.some(sub => sub.priority === 'High');
+            const urgent = subjects.some(sub => {
+                const daysLeft = Math.ceil((new Date(sub.examDate) - new Date()) / (1000 * 60 * 60 * 24));
+                return daysLeft <= 7;
+            });
+            let tip = "Add subjects to get personalized tips!";
+            if (urgent) tip = "Exams are near! Focus on revision and practice tests.";
+            else if (highPriority) tip = "High priority subjects? Dedicate more time and break them into tasks.";
+            else tip = "Stay consistent! Log your daily study to track progress.";
+            document.getElementById('studyTip').innerHTML = `<strong>Tip:</strong> ${tip}`;
+        }
 
-})
-.catch(error => {
-document.getElementById("loading").style.display="none";
-document.getElementById("error").innerText="Unable to fetch weather data.";
-});
-}
+        function clearAll() {
+            if (confirm('Are you sure? This will delete all data.')) {
+                subjects = [];
+                studyLogs = {};
+                localStorage.removeItem('studySubjects');
+                localStorage.removeItem('studyLogs');
+                updateLogSubjectOptions();
+                updateTotalLogged();
+                displayPlan();
+                updateTip();
+            }
+        }
 
-function getLocation(){
-if(navigator.geolocation){
-navigator.geolocation.getCurrentPosition(
-position => {
-getWeather(position.coords.latitude, position.coords.longitude);
-},
-error => {
-document.getElementById("loading").style.display="none";
-document.getElementById("error").innerText="Location access denied.";
-}
-);
-}else{
-document.getElementById("loading").innerText="Geolocation not supported.";
-}
-}
+        // Dark Mode Toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
 
-getLocation();
+        if (isDarkMode) {
+            body.classList.add('dark-mode');
+            darkModeToggle.textContent = 'Switch to Light Mode';
+        }
 
-</script>
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isNowDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isNowDark);
+            darkModeToggle.textContent = isNowDark ? 'Switch to Light Mode' : 'Toggle Dark Mode';
+        });
 
+        updateQuote();
+        updateLogSubjectOptions();
+        updateTotalLogged();
+        displayPlan();
+        updateTip();
+    </script>
 </body>
 </html>
