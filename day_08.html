@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Life Dashboard - Productivity OS</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<style>
+body {
+    transition: 0.3s;
+    background: #0f172a;
+    color: white;
+}
+
+/* Light Mode */
+.light-mode {
+    background: #f1f5f9;
+    color: #111;
+}
+
+/* Fix text visibility in Light Mode */
+.light-mode h1,
+.light-mode h2,
+.light-mode h3,
+.light-mode h4,
+.light-mode h5,
+.light-mode h6,
+.light-mode p,
+.light-mode div,
+.light-mode span,
+.light-mode li {
+    color: #111 !important;
+}
+body:not(.light-mode) h1,
+body:not(.light-mode) h2,
+body:not(.light-mode) h3,
+body:not(.light-mode) h4,
+body:not(.light-mode) h5,
+body:not(.light-mode) h6,
+body:not(.light-mode) p,
+body:not(.light-mode) div,
+body:not(.light-mode) span,
+body:not(.light-mode) li {
+    color: white !important;
+}
+
+/* Card style */
+.card {
+    border: none;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+/* Card background in dark mode */
+body:not(.light-mode) .card {
+    background: rgba(255, 255, 255, 0.05);
+}
+.light-mode .card {
+    background: white;
+}
+
+/* Progress */
+.progress {
+    height: 8px;
+}
+
+/* Timer */
+.timer-display {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* Quote */
+.quote {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* Toggle button */
+.toggle-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+/* Task list item style for dark mode */
+body:not(.light-mode) .list-group-item {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<button class="btn btn-warning toggle-btn" onclick="toggleMode()">Light Mode</button>
+
+<div class="container py-4">
+
+<h2 class="text-center mb-4">🚀 Life Dashboard</h2>
+
+<!-- Date & Time -->
+<div class="card p-3 mb-3 text-center">
+<h5 id="date"></h5>
+<h4 id="time"></h4>
+</div>
+
+<div class="row g-3">
+
+<!-- Tasks -->
+<div class="col-md-6">
+<div class="card p-3">
+<h5>📝 Today’s Tasks</h5>
+<input type="text" id="taskInput" class="form-control mb-2" placeholder="Add new task" />
+<button class="btn btn-success w-100 mb-2" onclick="addTask()">Add Task</button>
+<ul id="taskList" class="list-group"></ul>
+</div>
+</div>
+
+<!-- Habit -->
+<div class="col-md-6">
+<div class="card p-3">
+<h5>🔥 Habit Progress</h5>
+<input type="number" id="habitHours" class="form-control mb-2" placeholder="Hours studied today" />
+<button class="btn btn-primary w-100 mb-2" onclick="saveHabit()">Save</button>
+<div>Today: <span id="habitDisplay">0</span> hrs</div>
+</div>
+</div>
+
+<!-- Study -->
+<div class="col-md-6">
+<div class="card p-3">
+<h5>📚 Study Summary</h5>
+<input type="number" id="studyInput" class="form-control mb-2" placeholder="Total study hours" />
+<button class="btn btn-info w-100 mb-2" onclick="saveStudy()">Save</button>
+<div>Total Study Hours: <span id="studyDisplay">0</span></div>
+</div>
+</div>
+
+<!-- Expense -->
+<div class="col-md-6">
+<div class="card p-3">
+<h5>💰 Expense Summary</h5>
+<input type="number" id="expenseInput" class="form-control mb-2" placeholder="Today’s Expense" />
+<button class="btn btn-danger w-100 mb-2" onclick="saveExpense()">Save</button>
+<div>Total Expense: ₹<span id="expenseDisplay">0</span></div>
+</div>
+</div>
+
+<!-- Timer -->
+<div class="col-md-6">
+<div class="card p-3 text-center">
+<h5>⏱ Focus Timer (25 min)</h5>
+<div class="timer-display my-2" id="timer">25:00</div>
+<button class="btn btn-success me-2" onclick="startTimer()">Start</button>
+<button class="btn btn-warning" onclick="resetTimer()">Reset</button>
+</div>
+</div>
+
+<!-- Quote -->
+<div class="col-md-6">
+<div class="card p-3 text-center">
+<h5>💡 Daily Quote</h5>
+<div class="quote" id="quote"></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+/* THEME SYSTEM */
+function toggleMode() {
+    document.body.classList.toggle("light-mode");
+    const btn = document.querySelector(".toggle-btn");
+    if (document.body.classList.contains("light-mode")) {
+        btn.innerText = "Dark Mode";
+        btn.classList.remove("btn-warning");
+        btn.classList.add("btn-dark");
+        localStorage.setItem("theme", "light");
+    } else {
+        btn.innerText = "Light Mode";
+        btn.classList.remove("btn-dark");
+        btn.classList.add("btn-warning");
+        localStorage.setItem("theme", "dark");
+    }
+}
+
+/* Load saved theme */
+if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light-mode");
+    document.querySelector(".toggle-btn").innerText = "Dark Mode";
+    document.querySelector(".toggle-btn").classList.remove("btn-warning");
+    document.querySelector(".toggle-btn").classList.add("btn-dark");
+}
+
+/* DATE & TIME */
+function updateDateTime() {
+    const now = new Date();
+    document.getElementById("date").innerText = now.toDateString();
+    document.getElementById("time").innerText = now.toLocaleTimeString();
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
+/* TASKS */
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addTask() {
+    const input = document.getElementById("taskInput");
+    if (input.value.trim() == "") return;
+    tasks.push(input.value);
+    input.value = "";
+    saveTasks();
+    renderTasks();
+}
+
+function deleteTask(index) {
+    tasks.splice(index, 1);
+    saveTasks();
+    renderTasks();
+}
+
+function renderTasks() {
+    const list = document.getElementById("taskList");
+    list.innerHTML = "";
+    tasks.forEach((task, i) => {
+        list.innerHTML += `
+<li class="list-group-item d-flex justify-content-between">
+${task}
+<button class="btn btn-sm btn-danger" onclick="deleteTask(${i})">X</button>
+</li>`;
+    });
+}
+renderTasks();
+
+/* HABIT */
+function saveHabit() {
+    let hours = document.getElementById("habitHours").value;
+    localStorage.setItem("habit", hours);
+    document.getElementById("habitDisplay").innerText = hours;
+}
+document.getElementById("habitDisplay").innerText = localStorage.getItem("habit") || 0;
+
+/* STUDY */
+function saveStudy() {
+    let hours = document.getElementById("studyInput").value;
+    localStorage.setItem("study", hours);
+    document.getElementById("studyDisplay").innerText = hours;
+}
+document.getElementById("studyDisplay").innerText = localStorage.getItem("study") || 0;
+
+/* EXPENSE */
+function saveExpense() {
+    let money = document.getElementById("expenseInput").value;
+    localStorage.setItem("expense", money);
+    document.getElementById("expenseDisplay").innerText = money;
+}
+document.getElementById("expenseDisplay").innerText = localStorage.getItem("expense") || 0;
+
+/* TIMER */
+let time = 1500;
+let interval;
+
+function startTimer() {
+    clearInterval(interval);
+    interval = setInterval(() => {
+        if (time > 0) {
+            time--;
+            updateTimer();
+        } else {
+            clearInterval(interval);
+            alert("Focus session completed 🎉");
+        }
+    }, 1000);
+}
+
+function resetTimer() {
+    clearInterval(interval);
+    time = 1500;
+    updateTimer();
+}
+
+function updateTimer() {
+    let m = Math.floor(time / 60);
+    let s = time % 60;
+    document.getElementById("timer").innerText = `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
+}
+updateTimer();
+
+/* QUOTES */
+const quotes = [
+    "Discipline beats motivation.",
+    "Small steps daily = Big results.",
+    "Focus on progress, not perfection.",
+    "Consistency creates success.",
+    "Your future is built today."
+];
+
+document.getElementById("quote").innerText =
+    quotes[Math.floor(Math.random() * quotes.length)];
+</script>
+
+</body>
+</html>
