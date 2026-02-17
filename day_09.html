@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Notes Pro</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            transition: 0.3s;
+        }
+
+        .light-mode {
+            background: #f1f5f9;
+            color: #111;
+        }
+
+        .card {
+            border-radius: 15px;
+            border: none;
+        }
+
+        body:not(.light-mode) .card {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            backdrop-filter: blur(8px);
+        }
+
+        .light-mode .card {
+            background: white;
+            color: #111;
+        }
+
+        .note-card {
+            border-radius: 12px;
+            transition: 0.3s;
+        }
+
+        .note-card:hover {
+            transform: scale(1.02);
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        /* 🔥 FIXED DATE VISIBILITY */
+        .note-date {
+            font-size: 0.85rem;
+        }
+
+        body:not(.light-mode) .note-date {
+            color: #e2e8f0;
+        }
+
+        .light-mode .note-date {
+            color: #64748b;
+        }
+
+        /* Better muted text for dark mode */
+        body:not(.light-mode) .text-muted {
+            color: #94a3b8 !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="btn btn-warning toggle-btn" onclick="toggleMode()">Light Mode</button>
+
+    <div class="container py-4">
+        <h2 class="text-center mb-4">📝 Smart Notes Pro</h2>
+
+        <div class="row g-3">
+
+            <!-- Add Note -->
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h5>Add Note</h5>
+
+                    <input type="text" id="title" class="form-control mb-2" placeholder="Title">
+                    <textarea id="content" class="form-control mb-2" rows="4"
+                        placeholder="Write your note..."></textarea>
+
+                    <select id="category" class="form-select mb-2">
+                        <option value="Study">Study</option>
+                        <option value="Ideas">Ideas</option>
+                        <option value="Work">Work</option>
+                    </select>
+
+                    <button class="btn btn-success w-100 mb-2" onclick="addNote()">Save Note</button>
+                    <button class="btn btn-outline-info w-100" onclick="exportNotes()">Export Notes</button>
+
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="col-md-8">
+                <div class="card p-3">
+                    <h5>Your Notes</h5>
+                    <div id="notesContainer" class="row g-3"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+
+        let notes = JSON.parse(localStorage.getItem("notes")) || [];
+        let editIndex = null;
+
+        function saveData() {
+            localStorage.setItem("notes", JSON.stringify(notes));
+        }
+
+        function addNote() {
+            let title = document.getElementById("title").value;
+            let content = document.getElementById("content").value;
+            let category = document.getElementById("category").value;
+
+            if (title.trim() == "" || content.trim() == "") return;
+
+            let date = new Date().toLocaleString();
+
+            if (editIndex === null) {
+                notes.push({ title, content, category, pinned: false, date });
+            } else {
+                notes[editIndex].title = title;
+                notes[editIndex].content = content;
+                notes[editIndex].category = category;
+                notes[editIndex].date = date;
+                editIndex = null;
+            }
+
+            saveData();
+            clearForm();
+            renderNotes();
+        }
+
+        function clearForm() {
+            document.getElementById("title").value = "";
+            document.getElementById("content").value = "";
+        }
+
+        function deleteNote(index) {
+            notes.splice(index, 1);
+            saveData();
+            renderNotes();
+        }
+
+        function editNote(index) {
+            let note = notes[index];
+            document.getElementById("title").value = note.title;
+            document.getElementById("content").value = note.content;
+            document.getElementById("category").value = note.category;
+            editIndex = index;
+        }
+
+        function togglePin(index) {
+            notes[index].pinned = !notes[index].pinned;
+            saveData();
+            renderNotes();
+        }
+
+        function renderNotes() {
+            let container = document.getElementById("notesContainer");
+            container.innerHTML = "";
+
+            let sortedNotes = [...notes].sort((a, b) => b.pinned - a.pinned);
+
+            sortedNotes.forEach((note, i) => {
+
+                let originalIndex = notes.indexOf(note);
+
+                container.innerHTML += `
+<div class="col-md-6">
+<div class="card note-card p-3">
+<h6>${note.pinned ? "📌 " : ""}${note.title}</h6>
+<small class="text-info">${note.category}</small>
+<p>${note.content}</p>
+<small class="note-date">🗓 ${note.date}</small>
+<div class="d-flex justify-content-end gap-2 mt-2">
+<button class="btn btn-sm btn-secondary" onclick="togglePin(${originalIndex})">
+${note.pinned ? "Unpin" : "Pin"}
+</button>
+<button class="btn btn-sm btn-warning" onclick="editNote(${originalIndex})">Edit</button>
+<button class="btn btn-sm btn-danger" onclick="deleteNote(${originalIndex})">Delete</button>
+</div>
+</div>
+</div>`;
+            });
+        }
+
+        renderNotes();
+
+        function exportNotes() {
+            if (notes.length === 0) return;
+
+            let text = "SMART NOTES EXPORT\n\n";
+
+            notes.forEach((note, i) => {
+                text += `Note ${i + 1}\n`;
+                text += `Title: ${note.title}\n`;
+                text += `Category: ${note.category}\n`;
+                text += `Date: ${note.date}\n`;
+                text += `Pinned: ${note.pinned ? "Yes" : "No"}\n`;
+                text += `Content: ${note.content}\n`;
+                text += "--------------------------\n\n";
+            });
+
+            let blob = new Blob([text], { type: "text/plain" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "SmartNotes.txt";
+            link.click();
+        }
+
+        function toggleMode() {
+            document.body.classList.toggle("light-mode");
+
+            let btn = document.querySelector(".toggle-btn");
+
+            if (document.body.classList.contains("light-mode")) {
+                btn.innerText = "Dark Mode";
+                btn.classList.remove("btn-warning");
+                btn.classList.add("btn-dark");
+                localStorage.setItem("theme", "light");
+            } else {
+                btn.innerText = "Light Mode";
+                btn.classList.remove("btn-dark");
+                btn.classList.add("btn-warning");
+                localStorage.setItem("theme", "dark");
+            }
+        }
+
+        if (localStorage.getItem("theme") === "light") {
+            document.body.classList.add("light-mode");
+            document.querySelector(".toggle-btn").innerText = "Dark Mode";
+            document.querySelector(".toggle-btn").classList.remove("btn-warning");
+            document.querySelector(".toggle-btn").classList.add("btn-dark");
+        }
+
+    </script>
+
+</body>
+
+</html>
