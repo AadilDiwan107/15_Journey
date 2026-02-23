@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Flashcard Maker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Light Mode (Default) */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #fff3e0; /* Light orange */
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .navbar {
+            background-color: #ff9800 !important; /* Orange */
+            transition: background-color 0.3s;
+        }
+        .card {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 1px solid #ffe0b2;
+            background-color: white;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        .flashcard {
+            height: 250px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            padding: 20px;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+        .flashcard-front {
+            background-color: #ff9800;
+            color: white;
+        }
+        .flashcard-back {
+            background-color: #4caf50;
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .deck-card {
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .deck-card:hover {
+            transform: scale(1.05);
+        }
+        .stats {
+            background-color: #ffe0b2;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #2b4e99; /* Dark blue-black */
+            color: #e0e0e0;
+        }
+        body.dark-mode .navbar {
+            background-color: #4a6eb9 !important;
+        }
+        body.dark-mode .card {
+            background-color: #203d4b;
+            color: #e0e0e0;
+            border-color: #0f3460;
+        }
+        body.dark-mode .flashcard-front {
+            background-color: #e94560;
+        }
+        body.dark-mode .flashcard-back {
+            background-color: #223c86;
+        }
+        body.dark-mode .stats {
+            background-color: #223c86;
+        }
+        body.dark-mode .footer {
+            background-color: #223c86;
+        }
+        body.dark-mode .form-control {
+            background-color: #223c86;
+            color: #e0e0e0;
+            border-color: #223c86;
+        }
+        body.dark-mode .form-control:focus {
+            background-color: #223c86;
+            color: #e0e0e0;
+        }
+        body.dark-mode .form-label {
+            color: #e0e0e0;
+        }
+        body.dark-mode .text-muted {
+            color: #adb5bd !important;
+        }
+        body.dark-mode .deck-card {
+            background-color: #223c86;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-graduation-cap"></i> Study Flashcard Maker</a>
+            <button class="btn btn-outline-light btn-sm" id="darkModeToggle">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Create Flashcard Section -->
+            <div class="col-md-4">
+                <div class="card p-4">
+                    <h4>📇 Create Flashcard</h4>
+                    
+                    <div class="mb-3">
+                        <label for="deckName" class="form-label">Deck Name</label>
+                        <input type="text" class="form-control" id="deckName" placeholder="e.g., English Vocabulary">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="question" class="form-label">Question (Front)</label>
+                        <textarea class="form-control" id="question" rows="2" placeholder="e.g., What is photosynthesis?"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="answer" class="form-label">Answer (Back)</label>
+                        <textarea class="form-control" id="answer" rows="2" placeholder="e.g., Process by which plants make food"></textarea>
+                    </div>
+
+                    <button class="btn btn-warning w-100" id="addCardBtn">Add Card</button>
+                </div>
+
+                <!-- Saved Decks -->
+                <div class="card p-3 mt-3">
+                    <h5>📚 My Decks</h5>
+                    <div id="decksList"></div>
+                </div>
+            </div>
+
+            <!-- Study Section -->
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 id="currentDeckTitle">Select a Deck to Study</h4>
+                        <div>
+                            <button class="btn btn-primary btn-sm" id="shuffleBtn"><i class="fas fa-random"></i> Shuffle</button>
+                            <button class="btn btn-success btn-sm" id="resetProgressBtn">Reset Progress</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stats mb-3">
+                        <span>Cards: <strong id="totalCards">0</strong></span>
+                        <span class="ms-3">Mastered: <strong id="masteredCards">0</strong></span>
+                        <span class="ms-3">Remaining: <strong id="remainingCards">0</strong></span>
+                    </div>
+
+                    <!-- Flashcard Display -->
+                    <div id="flashcardContainer">
+                        <p class="text-muted text-center">Select a deck to start studying</p>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="text-center mt-3">
+                        <button class="btn btn-secondary" id="prevBtn" disabled>Previous</button>
+                        <button class="btn btn-success" id="markMasteredBtn" disabled>Mark as Mastered</button>
+                        <button class="btn btn-primary" id="nextBtn" disabled>Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer text-center py-3 mt-5">
+        <p>&copy; 2023 Study Flashcard Maker. Learn smarter, not harder!</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deckName = document.getElementById('deckName');
+            const question = document.getElementById('question');
+            const answer = document.getElementById('answer');
+            const addCardBtn = document.getElementById('addCardBtn');
+            const decksList = document.getElementById('decksList');
+            const currentDeckTitle = document.getElementById('currentDeckTitle');
+            const flashcardContainer = document.getElementById('flashcardContainer');
+            const totalCards = document.getElementById('totalCards');
+            const masteredCards = document.getElementById('masteredCards');
+            const remainingCards = document.getElementById('remainingCards');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const markMasteredBtn = document.getElementById('markMasteredBtn');
+            const shuffleBtn = document.getElementById('shuffleBtn');
+            const resetProgressBtn = document.getElementById('resetProgressBtn');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+
+            let decks = JSON.parse(localStorage.getItem('flashcardDecks')) || {};
+            let currentDeck = null;
+            let currentIndex = 0;
+
+            // Dark Mode Toggle
+            function initDarkMode() {
+                const isDarkMode = localStorage.getItem('darkMode') === 'true';
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+                }
+            }
+
+            darkModeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', isDarkMode);
+                
+                if (isDarkMode) {
+                    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+                } else {
+                    darkModeToggle.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+                }
+            });
+
+            // Initialize dark mode
+            initDarkMode();
+
+            // Load decks
+            function loadDecks() {
+                decksList.innerHTML = '';
+                const deckNames = Object.keys(decks);
+                if (deckNames.length === 0) {
+                    decksList.innerHTML = '<p class="text-muted">No decks yet. Create one!</p>';
+                    return;
+                }
+                deckNames.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = 'card deck-card p-2 mb-2';
+                    div.innerHTML = `
+                        <strong>${name}</strong> (${decks[name].length} cards)
+                        <button class="btn btn-danger btn-sm float-end delete-deck" data-deck="${name}">X</button>
+                    `;
+                    decksList.appendChild(div);
+                });
+
+                // Delete deck
+                document.querySelectorAll('.delete-deck').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const name = this.getAttribute('data-deck');
+                        delete decks[name];
+                        localStorage.setItem('flashcardDecks', JSON.stringify(decks));
+                        loadDecks();
+                    });
+                });
+            }
+            loadDecks();
+
+            // Add card
+            addCardBtn.addEventListener('click', function() {
+                const name = deckName.value.trim();
+                const q = question.value.trim();
+                const a = answer.value.trim();
+
+                if (!name || !q || !a) {
+                    alert('Fill all fields!');
+                    return;
+                }
+
+                if (!decks[name]) decks[name] = [];
+                decks[name].push({ question: q, answer: a, mastered: false });
+                localStorage.setItem('flashcardDecks', JSON.stringify(decks));
+
+                alert('Card added!');
+                question.value = '';
+                answer.value = '';
+                loadDecks();
+            });
+
+            // Select deck to study
+            decksList.addEventListener('click', function(e) {
+                if (e.target.classList.contains('deck-card') || e.target.closest('.deck-card')) {
+                    const card = e.target.closest('.deck-card');
+                    const name = card.querySelector('strong').textContent.split(' (')[0];
+                    currentDeck = { name, cards: [...decks[name]] };
+                    currentIndex = 0;
+                    currentDeckTitle.textContent = `Studying: ${name}`;
+                    loadFlashcard();
+                    updateStats();
+                }
+            });
+
+            // Load flashcard
+            function loadFlashcard() {
+                if (!currentDeck || currentDeck.cards.length === 0) {
+                    flashcardContainer.innerHTML = '<p class="text-muted text-center">No cards in this deck</p>';
+                    return;
+                }
+
+                const card = currentDeck.cards[currentIndex];
+                flashcardContainer.innerHTML = `
+                    <div class="flashcard" id="flashcard">
+                        <div class="flashcard-inner">
+                            <div class="flashcard-front">
+                                <div>
+                                    <small>Question</small>
+                                    <p>${card.question}</p>
+                                </div>
+                            </div>
+                            <div class="flashcard-back">
+                                <div>
+                                    <small>Answer</small>
+                                    <p>${card.answer}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Flip card
+                document.getElementById('flashcard').addEventListener('click', function() {
+                    this.classList.toggle('flipped');
+                });
+
+                // Update buttons
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === currentDeck.cards.length - 1;
+                markMasteredBtn.disabled = card.mastered;
+            }
+
+            // Update stats
+            function updateStats() {
+                if (!currentDeck) return;
+                totalCards.textContent = currentDeck.cards.length;
+                masteredCards.textContent = currentDeck.cards.filter(c => c.mastered).length;
+                remainingCards.textContent = currentDeck.cards.filter(c => !c.mastered).length;
+            }
+
+            // Navigation
+            prevBtn.addEventListener('click', function() {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    loadFlashcard();
+                }
+            });
+
+            nextBtn.addEventListener('click', function() {
+                if (currentIndex < currentDeck.cards.length - 1) {
+                    currentIndex++;
+                    loadFlashcard();
+                }
+            });
+
+            // Mark as mastered
+            markMasteredBtn.addEventListener('click', function() {
+                if (!currentDeck) return;
+                currentDeck.cards[currentIndex].mastered = true;
+                decks[currentDeck.name] = currentDeck.cards;
+                localStorage.setItem('flashcardDecks', JSON.stringify(decks));
+                loadFlashcard();
+                updateStats();
+            });
+
+            // Shuffle
+            shuffleBtn.addEventListener('click', function() {
+                if (!currentDeck) return;
+                currentDeck.cards.sort(() => Math.random() - 0.5);
+                currentIndex = 0;
+                loadFlashcard();
+            });
+
+            // Reset progress
+            resetProgressBtn.addEventListener('click', function() {
+                if (!currentDeck) return;
+                if (confirm('Reset all progress for this deck?')) {
+                    currentDeck.cards.forEach(c => c.mastered = false);
+                    decks[currentDeck.name] = currentDeck.cards;
+                    localStorage.setItem('flashcardDecks', JSON.stringify(decks));
+                    loadFlashcard();
+                    updateStats();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
