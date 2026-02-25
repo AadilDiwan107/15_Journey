@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Tic Tac Toe</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins;}
+body{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+}
+.container{
+  background:rgba(255,255,255,0.1);
+  backdrop-filter:blur(15px);
+  padding:30px;
+  border-radius:20px;
+  width:350px;
+  text-align:center;
+  color:white;
+}
+h2{margin-bottom:15px;}
+select,button{
+  padding:10px;
+  margin:8px 0;
+  border:none;
+  border-radius:10px;
+  width:100%;
+}
+button{
+  background:#00c9a7;
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
+}
+button:hover{
+  background:#00a383;
+}
+.board{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:15px;
+}
+.cell{
+  background:rgba(255,255,255,0.2);
+  height:80px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:28px;
+  cursor:pointer;
+  border-radius:15px;
+  transition:0.2s;
+}
+.cell:hover{
+  background:rgba(255,255,255,0.4);
+}
+.stats{
+  margin-top:15px;
+  font-size:14px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>🎮 Pro Tic Tac Toe</h2>
+
+<select id="mode">
+  <option value="easy">Easy</option>
+  <option value="medium">Medium</option>
+  <option value="hard">Hard</option>
+</select>
+
+<button onclick="startGame()">Start Game</button>
+
+<div class="board" id="board"></div>
+
+<div class="stats">
+  <p>Total Games: <span id="games">0</span></p>
+  <p>Total Wins: <span id="wins">0</span></p>
+  <button onclick="resetStats()">Reset Stats</button>
+</div>
+</div>
+
+<script>
+
+let board = document.getElementById("board");
+let mode = "easy";
+let currentPlayer = "X";
+let gameActive = false;
+let cells = [];
+let stats = JSON.parse(localStorage.getItem("tttStats")) || {games:0,wins:0};
+
+document.getElementById("games").innerText = stats.games;
+document.getElementById("wins").innerText = stats.wins;
+
+function startGame(){
+  mode = document.getElementById("mode").value;
+  board.innerHTML="";
+  cells=[];
+  gameActive=true;
+  currentPlayer="X";
+
+  for(let i=0;i<9;i++){
+    let cell=document.createElement("div");
+    cell.classList.add("cell");
+    cell.dataset.index=i;
+    cell.addEventListener("click", playerMove);
+    board.appendChild(cell);
+    cells.push("");
+  }
+}
+
+function playerMove(e){
+  let index=e.target.dataset.index;
+  if(!gameActive || cells[index]!="") return;
+  cells[index]="X";
+  e.target.innerText="X";
+  if(checkWinner("X")){
+    endGame(true);
+    return;
+  }
+  aiMove();
+}
+
+function aiMove(){
+  let emptyIndexes=cells.map((v,i)=>v==""?i:null).filter(v=>v!=null);
+  if(emptyIndexes.length==0){ endGame(false,true); return;}
+
+  let move;
+
+  if(mode==="easy"){
+    move=emptyIndexes[Math.floor(Math.random()*emptyIndexes.length)];
+  }
+  else if(mode==="medium"){
+    move=emptyIndexes[Math.floor(Math.random()*emptyIndexes.length)];
+  }
+  else{
+    move=bestMove();
+  }
+
+  cells[move]="O";
+  board.children[move].innerText="O";
+
+  if(checkWinner("O")){
+    endGame(false);
+  }
+}
+
+function bestMove(){
+  let emptyIndexes=cells.map((v,i)=>v==""?i:null).filter(v=>v!=null);
+  return emptyIndexes[0];
+}
+
+function checkWinner(player){
+  const wins=[
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  return wins.some(combo=>{
+    return combo.every(index=>cells[index]===player);
+  });
+}
+
+function endGame(playerWin,draw=false){
+  gameActive=false;
+  stats.games++;
+  if(playerWin){
+    stats.wins++;
+    alert("You Win! 🎉");
+  }else if(draw){
+    alert("Draw!");
+  }else{
+    alert("AI Wins 😈");
+  }
+  localStorage.setItem("tttStats",JSON.stringify(stats));
+  document.getElementById("games").innerText=stats.games;
+  document.getElementById("wins").innerText=stats.wins;
+}
+
+function resetStats(){
+  stats={games:0,wins:0};
+  localStorage.setItem("tttStats",JSON.stringify(stats));
+  document.getElementById("games").innerText=0;
+  document.getElementById("wins").innerText=0;
+}
+
+</script>
+
+</body>
+</html>
